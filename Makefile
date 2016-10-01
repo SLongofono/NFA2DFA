@@ -13,12 +13,15 @@ CFLAGS		:= -g -Wall
 # Specify all the source files required for this program
 SRC 		:= $(wildcard *.c)
 
+# Specify the name of the file which should be input to this program
+INPUT		:= input.txt
+
 # Target for rapid prototyping
 all : execute clean
 
 # Target for executing the program
 execute : $(PROG_NAME)
-	@./$<
+	@./$< < input.txt
 
 # Create a rule for linking the compiled files into executable object
 $(PROG_NAME) : $(SRC)
