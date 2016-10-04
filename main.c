@@ -80,8 +80,11 @@ int main(void)
 	}
 
 	/* Create a linked list of unmarked states */
-	state_list_t *unmarked_states = malloc(sizeof(struct state_list));
-	state_list_init(unmarked_states);
+	LIST_HEAD(unmarked_states);
+
+	/* Create the first node for unmarked states list */
+	state_list_t *um_state = malloc(sizeof(struct state_list));
+	state_list_init(um_state);
 
 	/* Calculate e-closure of Initial State */
 	state_t *list;
@@ -90,11 +93,11 @@ int main(void)
 	print_state(list);
 	printf ("} = %d\n", 1);
 
-	/* Push the obtained linked list to the unmarked states */
-	unmarked_states->head = list;
+	/* Populate the unmarked state node */
+	um_state->state_ptr = list;
 
-	/* Iterate over unmarked states */
-	state_list_t *list_iter = unmarked_states;
+	/* Push the obtained linked list to the unmarked states */
+	list_add_tail(&(um_state->list), &(unmarked_states));
 
 	/* DFA states iterator */
 	int dfa_state = 0;
@@ -103,7 +106,8 @@ int main(void)
 	/* Track DFA transitions */
 	LIST_HEAD(dfa);
 
-	do {
+	/* Iterate over list of unmarked states */
+	list_for_each_entry(um_state, &unmarked_states, list) {
 		state_t *a_move, *b_move;
 		dfa_entry_t *dfa_transition;
 
@@ -118,11 +122,11 @@ int main(void)
 
 		/* Mark the current state */
 		printf("\nMark-%d\n", dfa_state+1);
-		mark(list_iter->head, transitions, &a_move, &b_move);
+		mark(um_state->state_ptr, transitions, &a_move, &b_move);
 
 		if (a_move->id != -1) {
 			printf("{");
-			print_state(list_iter->head);
+			print_state(um_state->state_ptr);
 			printf("} --a--> {");
 			print_state(a_move);
 			printf("}\n");
@@ -136,18 +140,19 @@ int main(void)
 			printf("}");
 
 			/* Find out if the new state is already present in the state-list */
-			if (state_not_marked(list, unmarked_states)) {
+			if (state_not_marked(list, &unmarked_states)) {
 				/* Keep track of total dfa-states */
 				total_dfa_states++;
 
 				/* Create a node in the unmarked states list */
 				state_list_t *new_state_list = malloc(sizeof(struct state_list));
+				state_list_init(new_state_list);
 
 				/* Populate the node with the linked list value */
-				new_state_list->head = list;
+				new_state_list->state_ptr = list;
 
 				/* Put the new list node in the unmarked states list */
-				list_add(unmarked_states, new_state_list);
+				list_add_tail(&(new_state_list->list), &(unmarked_states));
 			}
 
 			/* Keep track of dfa table transitions */
@@ -159,7 +164,7 @@ int main(void)
 	
 		if (b_move->id != -1) {
 			printf("{");
-			print_state(list_iter->head);
+			print_state(um_state->state_ptr);
 			printf("} --b--> {");
 			print_state(b_move);
 			printf("}\n");
@@ -173,18 +178,19 @@ int main(void)
 			printf("}");
 
 			/* Find out if the new state is already present in the state-list */
-			if (state_not_marked(list, unmarked_states)) {
+			if (state_not_marked(list, &unmarked_states)) {
 				/* Keep track of total dfa-states */
 				total_dfa_states++;
 
 				/* Create a node in the unmarked states list */
 				state_list_t *new_state_list = malloc(sizeof(struct state_list));
+				state_list_init(new_state_list);
 
 				/* Populate the node with the linked list value */
-				new_state_list->head = list;
+				new_state_list->state_ptr = list;
 
 				/* Put the new list node in the unmarked states list */
-				list_add(unmarked_states, new_state_list);
+				list_add_tail(&(new_state_list->list), &(unmarked_states));
 			}
 
 			/* Keep track of dfa table transitions */
@@ -194,10 +200,9 @@ int main(void)
 			printf(" = %d\n", total_dfa_states);
 		}
 
-		/* Proceed to the next state in the list */
-		list_iter = list_iter->next;
+		/* Track the dfa states accounted so far */
 		dfa_state++;
-	} while (list_iter != unmarked_states);
+	};
 
 	printf("\n");
 

@@ -23,10 +23,8 @@ typedef struct transitions {
 } transitions_t;
 
 typedef struct state_list {
-	int 			size;
-	struct state 		*head;
-	struct state_list 	*next;
-	struct state_list 	*prev;
+	struct state 		*state_ptr;
+	struct list_head	list;
 } state_list_t;
 
 typedef struct dfa_table_entry {
@@ -52,13 +50,6 @@ do {								\
 	(head)->prev = (head);					\
 } while (0);
 
-#define state_list_init(list_head)				\
-do {								\
-	(list_head)->head = NULL;				\
-	(list_head)->size = 1;					\
-	(list_head)->next = (list_head);			\
-	(list_head)->prev = (list_head);			\
-} while (0);
 
 /*
  * Convenience macro for adding a node to a circular doubly linked
@@ -86,10 +77,19 @@ do {								\
  */
 #define dfa_entry_init(dfa_transition, trans_id)		\
 do {								\
-	dfa_transition->id = trans_id;				\
-	dfa_transition->trans_a = 0;				\
-	dfa_transition->trans_b = 0;				\
-	INIT_LIST_HEAD(&(dfa_transition->list));		\
+	(dfa_transition)->id = trans_id;			\
+	(dfa_transition)->trans_a = 0;				\
+	(dfa_transition)->trans_b = 0;				\
+	INIT_LIST_HEAD(&((dfa_transition)->list));		\
+} while (0);
+
+/*
+ * Convenience macro for initializing a state-list node
+ */
+#define state_list_init(head)					\
+do {								\
+	(head)->state_ptr = NULL;				\
+	INIT_LIST_HEAD(&((head)->list));			\
 } while (0);
 
 #endif /* __COMMON_H__ */

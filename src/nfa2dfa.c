@@ -140,18 +140,18 @@ void mark(state_t *input_states, transitions_t **transitions, state_t **a_move, 
 /* state_not_marked
  * Helper function for finding if a state has been marked
  */
-int state_not_marked(state_t *state, state_list_t *list_head)
+int state_not_marked(state_t *state, struct list_head *state_list)
 {
 	int result = 1;
 	int id_found = 0;
 	state_t *state_iter = state;
 	state_t *iter_1, *iter_2;
-	state_list_t *list_iter = list_head;
+	state_list_t *list_iter;
 
 	/* Iterate over linked list of linked lists of states */
-	do {
+	list_for_each_entry(list_iter, state_list, list) {
 		/* Get the first linked list of states */
-		state_iter = list_iter->head;
+		state_iter = list_iter->state_ptr;
 
 		if (state_iter->size == state->size) {
 			/* Iterate over the input linked list to see if it is equivalent
@@ -184,10 +184,7 @@ int state_not_marked(state_t *state, state_list_t *list_head)
 				iter_1 = iter_1->next;
 			} while (iter_1 != state_iter);
 		} 
-
-		/* Proceed to the next linked list */
-		list_iter = list_iter->next;
-	} while (list_iter != list_head);
+	}
 
 	return result;
 }
