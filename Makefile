@@ -8,10 +8,10 @@
 PROG_NAME 	:= assignment_1
 
 # Specify CFlags for the program
-CFLAGS		:= -g -Wno-format-zero-length
+CFLAGS		:= -g -Wno-format-zero-length  -I ./include/
 
 # Specify all the source files required for this program
-SRC 		:= $(wildcard *.c)
+SRC 		:= $(wildcard *.c) $(wildcard src/*.c)
 
 # Specify the name of the file which should be input to this program
 INPUT		:= input.txt
