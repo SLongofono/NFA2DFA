@@ -19,14 +19,14 @@
  * print_dfa_table
  * Convenience function for printing the DFA transition table
  */
-void print_dfa_table(dfa_entry_t *head)
+void print_dfa_table(struct list_head *head)
 {
-	dfa_entry_t *entry = head;
+	dfa_entry_t *entry = list_entry(head->next, dfa_entry_t, list);
 	char buf_a[32];
 	char buf_b[32];
 
 	/* Print table header */
-	printf("Initial State: {%d}\n", head->id);
+	printf("Initial State: {%d}\n", entry->id);
 
 	printf("Final States: {");
 	print_final_states(head);
@@ -35,7 +35,7 @@ void print_dfa_table(dfa_entry_t *head)
 	printf("State	a	b\n");
 
 	/* Iterate through dfa transitions and print them */
-	do {
+	list_for_each_entry(entry, head, list) {
 		if (entry->trans_a == 0) {
 			sprintf(buf_a, "");
 		} else {
@@ -49,10 +49,7 @@ void print_dfa_table(dfa_entry_t *head)
 		}
 
 		printf("%d	{%s}	{%s}\n", entry->id, buf_a, buf_b);
-
-		/* Proceed to the next entry */
-		entry = entry->next;
-	} while (entry != head);
+	}
 
 	/* All done here */
 	return;
@@ -62,22 +59,19 @@ void print_dfa_table(dfa_entry_t *head)
  * print_final_states
  * Convenience function for finding and printing final states of a dfa
  */
-void print_final_states(dfa_entry_t *dfa)
+void print_final_states(struct list_head *dfa)
 {
-	dfa_entry_t *node = dfa;
-	int final_state_id = dfa->prev->id;
+	dfa_entry_t *node = list_entry(dfa->prev, dfa_entry_t, list);
+	int final_state_id = node->id;
 	int count = 0;
 
-	do {
+	list_for_each_entry(node, dfa, list) {
 		if (node->trans_a == final_state_id || node->trans_b == final_state_id) {
 			if (count != 0) printf (",");
 			printf ("%d", node->id);
 			count++;
 		}
-
-		/* Proceed to next dfa node */
-		node = node->next;
-	} while (node != dfa);
+	}
 
 	/* Task Complete */
 	return;

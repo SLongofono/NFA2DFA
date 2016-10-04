@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Include local header */
+#include "list.h"
+
 typedef struct state {
 	int			id;
 	int			size;
@@ -30,9 +33,7 @@ typedef struct dfa_table_entry {
 	int			id;
 	int			trans_a;
 	int			trans_b;
-	int			size;
-	struct dfa_table_entry	*next;
-	struct dfa_table_entry	*prev;
+	struct list_head	list;
 } dfa_entry_t;
 
 /* Convenience Macros for differntiating between different parsing rules */
@@ -88,9 +89,7 @@ do {								\
 	dfa_transition->id = trans_id;				\
 	dfa_transition->trans_a = 0;				\
 	dfa_transition->trans_b = 0;				\
-	dfa_transition->size = 0;				\
-	dfa_transition->next = dfa_transition;			\
-	dfa_transition->prev = dfa_transition;			\
+	INIT_LIST_HEAD(&(dfa_transition->list));		\
 } while (0);
 
 #endif /* __COMMON_H__ */

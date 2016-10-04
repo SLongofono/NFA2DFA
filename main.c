@@ -101,28 +101,20 @@ int main(void)
 	int total_dfa_states = 1;
 
 	/* Track DFA transitions */
-	dfa_entry_t *dfa_head = malloc(sizeof(struct dfa_table_entry));
-
-	/* Initialize the dfa table entry */
-	dfa_entry_init(dfa_head, (dfa_state+1));
+	LIST_HEAD(dfa);
 
 	do {
 		state_t *a_move, *b_move;
 		dfa_entry_t *dfa_transition;
 
-		/* Add the entry to dfa table */
-		if (dfa_state != 0) {
-			/* Allocate an entry for this state in the dfa-table */
-			dfa_transition = malloc(sizeof(struct dfa_table_entry));
+		/* Allocate an entry for this state in the dfa-table */
+		dfa_transition = malloc(sizeof(struct dfa_table_entry));
 
-			/* Initialize the dfa table entry */
-			dfa_entry_init(dfa_transition, (dfa_state+1));
+		/* Initialize the dfa table entry */
+		dfa_entry_init(dfa_transition, (dfa_state+1));
 
-			/* Add the node to dfa table */
-			list_add(dfa_head, dfa_transition);
-		} else {
-			dfa_transition = dfa_head;
-		}
+		/* Add the node to dfa table */
+		list_add_tail(&(dfa_transition->list), &(dfa));
 
 		/* Mark the current state */
 		printf("\nMark-%d\n", dfa_state+1);
@@ -210,7 +202,7 @@ int main(void)
 	printf("\n");
 
 	/* Now print out the DFA Transition Table */
-	print_dfa_table(dfa_head);
+	print_dfa_table(&dfa);
 
 	/* All done here */
 	return 0;
