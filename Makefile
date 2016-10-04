@@ -8,7 +8,7 @@
 PROG_NAME 	:= assignment_1
 
 # Specify CFlags for the program
-CFLAGS		:= -g -Wall
+CFLAGS		:= -g -Wno-format-zero-length
 
 # Specify all the source files required for this program
 SRC 		:= $(wildcard *.c)

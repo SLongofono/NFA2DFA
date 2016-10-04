@@ -14,26 +14,34 @@
 #define DEBUG	0
 
 typedef struct state {
-	int	id;
-	int	size;
-	struct state *next;
-	struct state *prev;
+	int			id;
+	int			size;
+	struct state 		*next;
+	struct state 		*prev;
 } state_t;
 
 typedef struct transitions {
-	int	id;
-	struct state *a;
-	struct state *b;
-	struct state *E;
+	int			id;
+	struct state 		*a;
+	struct state 		*b;
+	struct state 		*E;
 } transitions_t;
 
 typedef struct state_list {
-	int size;
-	struct state *head;
-	struct state_list *next;
-	struct state_list *prev;
+	int 			size;
+	struct state 		*head;
+	struct state_list 	*next;
+	struct state_list 	*prev;
 } state_list_t;
 
+typedef struct dfa_table_entry {
+	int			id;
+	int			trans_a;
+	int			trans_b;
+	int			size;
+	struct dfa_table_entry	*next;
+	struct dfa_table_entry	*prev;
+} dfa_entry_t;
 
 /* Convenience Macros for differntiating between different parsing rules */
 #define SINGLE		(int)1
@@ -79,10 +87,27 @@ do {								\
 	}							\
 } while (0);
 
+/*
+ * Convenience macro for initializing a dfa table entry for a
+ * given state
+ */
+#define dfa_entry_init(dfa_transition, trans_id)		\
+do {								\
+	dfa_transition->id = trans_id;				\
+	dfa_transition->trans_a = 0;				\
+	dfa_transition->trans_b = 0;				\
+	dfa_transition->size = 0;				\
+	dfa_transition->next = dfa_transition;			\
+	dfa_transition->prev = dfa_transition;			\
+} while (0);
+
 /* Utility Functions */
 void get_states(char *input_buffer, state_t *in_head, int rule_type, int *total_states);
 void get_transitions(char *input_buffer, transitions_t *transitions);
 int state_not_marked(state_t *state, state_list_t *list_head);
+void print_dfa_table(dfa_entry_t *head);
+void print_final_states(dfa_entry_t *dfa);
+void print_state(state_t *state);
 
 /* Primary Functions for NFA2DFA Conversion */
 void e_closure(state_t *input_states, transitions_t **transitions, int empty, state_t **output_states);
@@ -155,9 +180,6 @@ int main(void)
 		get_transitions(input_buffer, transitions[iter]);
 	}
 
-	/* Create a transition table for dfa states */
-	transitions_t **dfa_transitions = malloc(sizeof(struct transitions *));
-
 	/* Create a linked list of unmarked states */
 	state_list_t *unmarked_states = malloc(sizeof(struct state_list));
 	state_list_init(unmarked_states);
@@ -165,6 +187,9 @@ int main(void)
 	/* Calculate e-closure of Initial State */
 	state_t *list;
 	e_closure(in_head, transitions, 1, &list);
+	printf ("E-Closure(I0) = {");
+	print_state(list);
+	printf ("} = %d\n", 1);
 
 	/* Push the obtained linked list to the unmarked states */
 	unmarked_states->head = list;
@@ -172,21 +197,58 @@ int main(void)
 	/* Iterate over unmarked states */
 	state_list_t *list_iter = unmarked_states;
 
-	do {
-		printf("\n*** Marking State:\n");
-		debug_print_states(list_iter->head);
+	/* DFA states iterator */
+	int dfa_state = 0;
+	int total_dfa_states = 1;
 
+	/* Track DFA transitions */
+	dfa_entry_t *dfa_head = malloc(sizeof(struct dfa_table_entry));
+
+	/* Initialize the dfa table entry */
+	dfa_entry_init(dfa_head, (dfa_state+1));
+
+	do {
 		state_t *a_move, *b_move;
+		dfa_entry_t *dfa_transition;
+
+		/* Add the entry to dfa table */
+		if (dfa_state != 0) {
+			/* Allocate an entry for this state in the dfa-table */
+			dfa_transition = malloc(sizeof(struct dfa_table_entry));
+
+			/* Initialize the dfa table entry */
+			dfa_entry_init(dfa_transition, (dfa_state+1));
+
+			/* Add the node to dfa table */
+			list_add(dfa_head, dfa_transition);
+		} else {
+			dfa_transition = dfa_head;
+		}
 
 		/* Mark the current state */
+		printf("\nMark-%d\n", dfa_state+1);
 		mark(list_iter->head, transitions, &a_move, &b_move);
 
 		if (a_move->id != -1) {
+			printf("{");
+			print_state(list_iter->head);
+			printf("} --a--> {");
+			print_state(a_move);
+			printf("}\n");
+
 			/* Calculate e-closure of a-move */
 			e_closure(a_move, transitions, 1, &list);
+			printf("E-closure{");
+			print_state(a_move);
+			printf("} = {");
+			print_state(list);
+			printf("}");
 
 			/* Find out if the new state is already present in the state-list */
 			if (state_not_marked(list, unmarked_states)) {
+				/* Keep track of total dfa-states */
+				total_dfa_states++;
+
 				/* Create a node in the unmarked states list */
 				state_list_t *new_state_list = malloc(sizeof(struct state_list));
 
@@ -196,14 +258,34 @@ int main(void)
 				/* Put the new list node in the unmarked states list */
 				list_add(unmarked_states, new_state_list);
 			}
+
+			/* Keep track of dfa table transitions */
+			dfa_transition->trans_a = total_dfa_states;
+
+			/* Print total dfa states counted so far */
+			printf(" = %d\n", total_dfa_states);
 		}
 	
 		if (b_move->id != -1) {
+			printf("{");
+			print_state(list_iter->head);
+			printf("} --b--> {");
+			print_state(b_move);
+			printf("}\n");
+
 			/* Calculate e-closure of b-move */
 			e_closure(b_move, transitions, 1, &list);
+			printf("E-closure{");
+			print_state(b_move);
+			printf("} = {");
+			print_state(list);
+			printf("}");
 
 			/* Find out if the new state is already present in the state-list */
 			if (state_not_marked(list, unmarked_states)) {
+				/* Keep track of total dfa-states */
+				total_dfa_states++;
+
 				/* Create a node in the unmarked states list */
 				state_list_t *new_state_list = malloc(sizeof(struct state_list));
 
@@ -213,71 +295,121 @@ int main(void)
 				/* Put the new list node in the unmarked states list */
 				list_add(unmarked_states, new_state_list);
 			}
+
+			/* Keep track of dfa table transitions */
+			dfa_transition->trans_b = total_dfa_states;
+
+			/* Print total dfa states counted so far */
+			printf(" = %d\n", total_dfa_states);
 		}
 
 		/* Proceed to the next state in the list */
 		list_iter = list_iter->next;
+		dfa_state++;
 	} while (list_iter != unmarked_states);
 
 	printf("\n");
 
-#if DEBUG
-	/* Calculate E-closure of the initial state */
-	state_t *list;
-	e_closure(in_head, transitions, 1, &list);
-
-	printf("E-Closure of I0:\n");
-	debug_print_states(list);
-
-	/* Mark the calculated state */
-	state_t *a_move, *b_move;
-	mark(list, transitions, &a_move, &b_move);
-
-	printf("Move-A of 1:\n");
-	debug_print_states(a_move);
-
-	printf("Move-B of 1:\n");
-	debug_print_states(b_move);
-
-	e_closure(a_move, transitions, 1, &list);
-	printf("E-Closure of 1:\n");
-	debug_print_states(list);
-
-	mark(list, transitions, &a_move, &b_move);
-
-	printf("Move-A of 2:\n");
-	debug_print_states(a_move);
-
-	printf("Move-B of 2:\n");
-	debug_print_states(b_move);
-
-	e_closure(b_move, transitions, 1, &list);
-	printf("E-Closure of 4:\n");
-	debug_print_states(list);
-
-	/* DEBUG */
-	printf("\n*** Initial States \n");
-	debug_print_states(in_head);
-
-	printf("\n*** Final States   \n");
-	debug_print_states(out_head);
-
-	printf("\n*** Total States   = %d\n", total_states);
-
-	for (iter = 0; iter < total_states; iter++) {
-		printf("\n*** Transition     = %d\n", transitions[iter]->id);
-		printf("\n*** Transition->a  \n");
-		debug_print_states(transitions[iter]->a);
-		printf("\n*** Transition->b  \n");
-		debug_print_states(transitions[iter]->b);
-		printf("\n*** Transition->E  \n");
-		debug_print_states(transitions[iter]->E);
-		printf("\n");
-	}
-#endif
+	/* Now print out the DFA Transition Table */
+	print_dfa_table(dfa_head);
 
 	/* All done here */
 	return 0;
+}
+
+/*
+ * print_dfa_table
+ * Convenience function for printing the DFA transition table
+ */
+void print_dfa_table(dfa_entry_t *head)
+{
+	dfa_entry_t *entry = head;
+	char buf_a[32];
+	char buf_b[32];
+
+	/* Print table header */
+	printf("Initial State: {%d}\n", head->id);
+
+	printf("Final States: {");
+	print_final_states(head);
+	printf("}\n");
+
+	printf("State	a	b\n");
+
+	/* Iterate through dfa transitions and print them */
+	do {
+		if (entry->trans_a == 0) {
+			sprintf(buf_a, "");
+		} else {
+			sprintf(buf_a, "%d", entry->trans_a);
+		}
+
+		if (entry->trans_b == 0) {
+			sprintf(buf_b, "");
+		} else {
+			sprintf(buf_b, "%d", entry->trans_b);
+		}
+
+		printf("%d	{%s}	{%s}\n", entry->id, buf_a, buf_b);
+
+		/* Proceed to the next entry */
+		entry = entry->next;
+	} while (entry != head);
+
+	/* All done here */
+	return;
+}
+
+/*
+ * print_final_states
+ * Convenience function for finding and printing final states of a dfa
+ */
+void print_final_states(dfa_entry_t *dfa)
+{
+	dfa_entry_t *node = dfa;
+	int final_state_id = dfa->prev->id;
+	int count = 0;
+
+	do {
+		if (node->trans_a == final_state_id || node->trans_b == final_state_id) {
+			if (count != 0) printf (",");
+			printf ("%d", node->id);
+			count++;
+		}
+
+		/* Proceed to next dfa node */
+		node = node->next;
+	} while (node != dfa);
+
+	/* Task Complete */
+	return;
+}
+
+/*
+ * print_state
+ * Convenience function for printing a state list
+ */
+void print_state(state_t *state)
+{
+	state_t *head = state;
+	state_t *iter = head;
+	int count = 0;
+
+	do {
+		if (iter->id != -1) {
+			if (count != 0) printf(",");
+			printf("%d", iter->id);
+		} else {
+			break;
+		}
+
+		/* Proceed to next state in the list */
+		iter = iter->next;
+		count++;
+	} while (iter != head);
+
+	/* Done */
+	return;
 }
 
 /* state_not_marked
