@@ -20,7 +20,7 @@
  */
 void e_closure(state_t *input_states, struct list_head *transitions, int empty, state_t **output_states)
 {
-	state_t	*state_iter = input_states;
+	state_t *input_iter = input_states;
 
 	do {
 		/* Check if the list of output states is empty */
@@ -29,30 +29,66 @@ void e_closure(state_t *input_states, struct list_head *transitions, int empty, 
 			(*output_states) = malloc(sizeof(struct state));
 			list_init((*output_states));
 
-			(*output_states)->id = state_iter->id;
+			(*output_states)->id = input_iter->id;
 		} else {
-			/* Add this state to the output states linked list */
-			state_t *new_state = malloc(sizeof(struct state));
+			state_t *temp_state = *output_states;
+			int found = 0;
 
-			/* Copy the id-value */
-			new_state->id = state_iter->id;
+			do {
+				if (temp_state->id == input_iter->id) {
+					found = 1;
+					break;
+				}
 
-			/* Add the node to the list */
-			list_add((*output_states), new_state);
+				/* Proceed to the next node */
+				temp_state = temp_state->next;
+			} while (temp_state != *output_states);
+
+			if (found == 0) {
+				/* Add this state to the output states linked list */
+				state_t *new_state = malloc(sizeof(struct state));
+
+				/* Copy the id-value */
+				new_state->id = input_iter->id;
+
+				/* Add the node to the list */
+				list_add((*output_states), new_state);
+			}
 		}
 
 		/* Check the transition table for any E-transitions of the input state */
-		state_list_t *node = list_entry((transitions[state_iter->id - 1]).prev, state_list_t, list);
-		state_t *head = node->state_ptr;
+		state_list_t *node = list_entry((transitions[input_iter->id - 1]).prev, state_list_t, list);
+		state_t *state_iter = node->state_ptr;
 
-		if (head->id != -1) {
-			/* Calculate the e-closure of the E-transition linked list */
-			e_closure(head, transitions, 0, output_states);
-		}
+		do {
+			if (state_iter->id != -1) {
+				/* Make sure that the state has not already been added */
+				state_t *temp_state = *output_states;
+				int	found = 0;
 
-		/* Proceed to the next state in input list */
-		state_iter = state_iter->next;
-	} while (state_iter != input_states);
+				do {
+					if (temp_state->id == state_iter->id) {
+						found = 1;
+						break;
+					}
+
+					/* Proceed to next state in the output list */
+					temp_state = temp_state->next;
+				} while (temp_state != *output_states);
+
+				if (found == 0) {
+					/* Calculate the e-closure of the E-transition linked list */
+					e_closure(state_iter, transitions, 0, output_states);
+				}
+			}
+
+			/* Proceed to the next state in input list */
+			state_iter = state_iter->next;
+		} while (state_iter != node->state_ptr);
+
+		/* Move on to the next state in the input list */
+		input_iter = input_iter->next;
+	} while (input_iter != input_states);
 
 	/* All done here */
 	return;
@@ -69,8 +105,8 @@ void mark(state_t *input_states, struct list_head *transitions, struct list_head
 	char		id = 'a';
 
 	/* Iterate over the list of transitions */
-	list_for_each_entry(transition, &transitions[1], list) {
-		if (&(transition->list) == (&(transitions[1]))->prev) break;
+	list_for_each_entry(transition, &transitions[0], list) {
+		if (&(transition->list) == (&(transitions[0]))->prev) break;
 
 		/* Create a state-list to be returned */
 		state_list_t *moves = malloc(sizeof(struct state_list));
@@ -98,21 +134,38 @@ void mark(state_t *input_states, struct list_head *transitions, struct list_head
 
 					do {
 						if (state_iter->id != -1) {
-							if (moves->state_ptr->id == -1) {
-								/* Populate the head state */
-								moves->state_ptr->id = state_iter->id;
-							} else {
-								/* Create a new state */
-								new_state = malloc(sizeof(struct state));
-								list_init(new_state);
+							/* Make sure that the state we are adding has not been
+							   added already */
+							state_t	*temp_state = moves->state_ptr;
+							int 	found = 0;
 
-								/* Populate the state id */
-								new_state->id = state_iter->id;
+							do {
+								if (temp_state->id == state_iter->id) {
+									found = 1;
+									break;
+								}
 
-								/* Add the new state to linked list */
-								list_add(moves->state_ptr, new_state);
+								/* Proceed to the next state in the linked list */
+								temp_state = temp_state->next;
+							} while (temp_state != moves->state_ptr);
+
+							if (found == 0) {
+								/* Add the new state to the list */
+								if (moves->state_ptr->id == -1) {
+									/* Populate the head state */
+									moves->state_ptr->id = state_iter->id;
+								} else {
+									/* Create a new state */
+									new_state = malloc(sizeof(struct state));
+									list_init(new_state);
+
+									/* Populate the state id */
+									new_state->id = state_iter->id;
+
+									/* Add the new state to linked list */
+									list_add(moves->state_ptr, new_state);
+								}
 							}
-
 						} else {
 							break;
 						}
@@ -141,9 +194,10 @@ void mark(state_t *input_states, struct list_head *transitions, struct list_head
 /* state_not_marked
  * Helper function for finding if a state has been marked
  */
-int state_not_marked(state_t *state, struct list_head *state_list)
+int state_not_marked(state_t *state, struct list_head *state_list, int *state_id)
 {
 	int 		result = 1;
+	int		index = 0;
 	int 		id_found = 0;
 	state_t 	*state_iter = state;
 	state_t 	*iter_1, *iter_2;
@@ -151,6 +205,9 @@ int state_not_marked(state_t *state, struct list_head *state_list)
 
 	/* Iterate over linked list of linked lists of states */
 	list_for_each_entry(list_iter, state_list, list) {
+		/* Keep track of state count */
+		index++;
+
 		/* Get the first linked list of states */
 		state_iter = list_iter->state_ptr;
 
@@ -178,6 +235,7 @@ int state_not_marked(state_t *state, struct list_head *state_list)
 				/* We should have found the id by now */
 				if (id_found == state->size) {
 					/* State is already marked */
+					*state_id = index;
 					return 0;
 				}
 
@@ -186,6 +244,9 @@ int state_not_marked(state_t *state, struct list_head *state_list)
 			} while (iter_1 != state_iter);
 		} 
 	}
+
+	/* Update state id */
+	*state_id = index + 1;
 
 	return result;
 }

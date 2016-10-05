@@ -178,7 +178,8 @@ int main(void)
 		/* Iterate over input symbols and calculate dfa states */
 		list_for_each_entry(move_list, &moves, list) {
 			/* Create a node in the dfa state linked list */
-			dfa_move_t *dfa_move;
+			dfa_move_t 	*dfa_move;
+			int		dfa_state_id;
 
 			/* Allocate memory for the dfa move */
 			dfa_move = malloc(sizeof(struct dfa_move_list));
@@ -207,7 +208,7 @@ int main(void)
 				printf("}");
 
 				/* Find out if the new state is already present in the state-list */
-				if (state_not_marked(list, &unmarked_states)) {
+				if (state_not_marked(list, &unmarked_states, &dfa_state_id)) {
 					/* Keep track of total dfa-states */
 					total_dfa_states++;
 
@@ -223,10 +224,10 @@ int main(void)
 				}
 
 				/* Keep track of dfa table transitions */
-				dfa_move->id = total_dfa_states;
+				dfa_move->id = dfa_state_id;
 
 				/* Print total dfa states counted so far */
-				printf(" = %d\n", total_dfa_states);
+				printf(" = %d\n", dfa_move->id);
 			}
 
 			depth++;

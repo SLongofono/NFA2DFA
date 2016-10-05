@@ -1,0 +1,19 @@
+E-closure(I0) = {1} = 1
+
+Mark 1
+{1} --a--> {2,3}
+E-closure{2,3} = {2,3} = 2
+{1} --b--> {1}
+E-closure{1} = {1} = 1
+
+Mark 2
+{2,3} --a--> {2,3}
+E-closure{2,3} = {2,3} = 2
+{2,3} --b--> {1}
+E-closure{1} = {1} = 1
+
+Initial State: {1}
+Final States: {1}
+State	a	b	
+1	{2}	{1}	
+2	{2}	{1}
