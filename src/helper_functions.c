@@ -144,8 +144,8 @@ void print_state(state_t *state)
 	do {
 		state_t *temp_iter = state;
 
-		/* Reset print value */
-		print_val = 1000;
+		/* Reset print value i.e. max value of 32-bit signed integer */
+		print_val = 0x7FFFFFFF;
 
 		if (temp_iter->id != -1) {
 			do {
