@@ -23,7 +23,7 @@
  */
 int main(void)
 {
-	char	input_buffer[256];
+	char	input_buffer[LINE_WIDTH];
 	int	total_states = 0;
 	int	iter = 0;
 
@@ -48,32 +48,32 @@ int main(void)
 	list_init(out_head);
 
 	/* Get the input state from the stdin */
-	fgets(input_buffer, 256, stdin);
+	fgets(input_buffer, LINE_WIDTH, stdin);
 
 	/* Parse the input string to get the input states */
 	get_states(input_buffer, in_head, BRACES, NULL);
 
 	/* Get the finish states from the stdin */
-	fgets(input_buffer, 256, stdin);
+	fgets(input_buffer, LINE_WIDTH, stdin);
 
 	/* Parse the input string to get the input final states */
 	get_states(input_buffer, out_head, BRACES, NULL);
 
 	/* Get the total states from the stdin */
-	fgets(input_buffer, 256, stdin);
+	fgets(input_buffer, LINE_WIDTH, stdin);
 
 	/* Parse the next input string to get the total number of states */
 	get_states(input_buffer, NULL, SINGLE, &total_states);
 
 	/* Consume the next line - Taking input symbols 'a' and 'b' for granted at the moment */
-	fgets(input_buffer, 256, stdin);
+	fgets(input_buffer, LINE_WIDTH, stdin);
 
 	/* Create a dynamic array for storing the transitions for all NFA states*/
 	struct list_head *state_transitions = malloc(total_states * sizeof(struct list_head));
 
 	for (iter = 0; iter < total_states; iter++) {
 		/* Get the first state transition */
-		fgets(input_buffer, 256, stdin);
+		fgets(input_buffer, LINE_WIDTH, stdin);
 
 		/* Initialize the linked list heads */
 		INIT_LIST_HEAD(&(state_transitions[iter]));

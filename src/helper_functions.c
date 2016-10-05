@@ -71,9 +71,9 @@ void print_dfa_table(struct list_head *head)
  */
 void print_final_states(struct list_head *dfa)
 {
-	dfa_entry_t *node = list_entry(dfa->prev, dfa_entry_t, list);
-	int final_state_id = node->id;
-	int count = 0;
+	dfa_entry_t 	*node = list_entry(dfa->prev, dfa_entry_t, list);
+	int 		final_state_id = node->id;
+	int 		count = 0;
 
 	list_for_each_entry(node, dfa, list) {
 		/* Iterate over the list of moves */

@@ -28,7 +28,7 @@ void get_transitions(char *input_buffer, struct list_head *states)
 	state_t		*new_state;
 
 	/* Extract the transition values from the input string */
-	for (; iter < 256 && input_buffer[iter] != '\n'; iter++) {
+	for (; iter < LINE_WIDTH && input_buffer[iter] != '\n'; iter++) {
 		/* Find out if the state machine is in an accepting state */
 		if (input_buffer[iter] == '{') {
 			flag = 1;
@@ -122,7 +122,7 @@ void get_states(char *input_buffer, state_t *in_head, int rule_type, int *total_
 	int	iter = 0;
 
 	/* Extract the input state from the line */
-	for (iter = 0; iter < 256 && input_buffer[iter] != '\n'; iter++) {
+	for (iter = 0; iter < LINE_WIDTH && input_buffer[iter] != '\n'; iter++) {
 		if (rule_type == BRACES) {
 			/* Look for the braces to get the state value */
 			if (input_buffer[iter] == '{') {

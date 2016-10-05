@@ -8,52 +8,12 @@
 /* Include local header */
 #include "list.h"
 
-typedef struct state {
-	int			id;
-	int			size;
-	struct state 		*next;
-	struct state 		*prev;
-} state_t;
-
-typedef struct state_list {
-	struct state 		*state_ptr;
-	struct list_head	list;
-} state_list_t;
-
-typedef struct transitions {
-	int		id;
-	struct state	*a;
-	struct state	*b;
-	struct state	*E;
-} transitions_t;
-
-typedef struct dfa_move_list {
-	int			id;
-	struct list_head	list;
-} dfa_move_t;
-
-typedef struct dfa_table_entry {
-	int			id;
-	struct list_head	dfa_transitions;
-	struct list_head	list;
-} dfa_entry_t;
+/* Declare line-width which this program can handle */
+#define LINE_WIDTH	(int)256
 
 /* Convenience Macros for differntiating between different parsing rules */
 #define SINGLE		(int)1
 #define BRACES		(int)2
-
-/*
- * Convenience macro for intializing the head of a circular doubly
- * linked list
- */
-#define list_init(head)						\
-do {								\
-	(head)->id = -1;					\
-	(head)->size = 1;					\
-	(head)->next = (head);					\
-	(head)->prev = (head);					\
-} while (0);
-
 
 /*
  * Convenience macro for adding a node to a circular doubly linked
@@ -73,6 +33,27 @@ do {								\
 		list_head->prev = node;				\
 		node->next = list_head;				\
 	}							\
+} while (0);
+
+/*
+ * Convenience macro for intializing the head of a circular doubly
+ * linked list
+ */
+#define list_init(head)						\
+do {								\
+	(head)->id = -1;					\
+	(head)->size = 1;					\
+	(head)->next = (head);					\
+	(head)->prev = (head);					\
+} while (0);
+
+/*
+ * Convenience macro for initializing a state-list node
+ */
+#define state_list_init(head)					\
+do {								\
+	(head)->state_ptr = NULL;				\
+	INIT_LIST_HEAD(&((head)->list));			\
 } while (0);
 
 /*
@@ -96,12 +77,33 @@ do {								\
 } while (0);
 
 /*
- * Convenience macro for initializing a state-list node
+ * DATA STRUCTURES
+ *
+ * Because of the generic nature of input text to this program,
+ * the primary data structure used for storing information is
+ * linked list based
  */
-#define state_list_init(head)					\
-do {								\
-	(head)->state_ptr = NULL;				\
-	INIT_LIST_HEAD(&((head)->list));			\
-} while (0);
+typedef struct state {
+	int			id;
+	int			size;
+	struct state 		*next;
+	struct state 		*prev;
+} state_t;
+
+typedef struct state_list {
+	struct state 		*state_ptr;
+	struct list_head	list;
+} state_list_t;
+
+typedef struct dfa_move_list {
+	int			id;
+	struct list_head	list;
+} dfa_move_t;
+
+typedef struct dfa_table_entry {
+	int			id;
+	struct list_head	dfa_transitions;
+	struct list_head	list;
+} dfa_entry_t;
 
 #endif /* __COMMON_H__ */

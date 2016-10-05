@@ -131,90 +131,9 @@ void mark(state_t *input_states, struct list_head *transitions, struct list_head
 			state_iter = state_iter->next;
 		} while (state_iter != input_states);
 
-#if 0
-		printf("{");
-		print_state(input_states);
-		printf("} --%c--> {", id);
-		print_state(moves->state_ptr);
-		printf("}\n");
-#endif
-
 		/* Increment the id */
 		id++;
 	}
-
-#if 0
-	state_t	*state_iter = input_states;
-	state_t *a_states, *b_states;
-
-	/* Initialize a-states and b-states */
-	a_states = malloc(sizeof(struct state));
-	b_states = malloc(sizeof(struct state));
-
-	*a_move = a_states;
-	*b_move = b_states;
-
-	list_init(a_states);
-	list_init(b_states);
-
-	/* Calculate move-a for input states */
-	do {
-		state_t *head = transitions[state_iter->id - 1]->a;
-		state_t *node = head;
-
-		if (node->id != -1) {
-			do {
-				if (a_states->id == -1) {
-					a_states->id = node->id;
-				} else {
-					/* Create a new state node to be added to mova-a linked list */
-					state_t *new_state = malloc(sizeof(struct state));
-
-					/* Copy the state id value */
-					new_state->id = node->id;
-
-					/* Add the new state to the linked list */
-					list_add(a_states, new_state);
-				}
-
-				/* Proceed to the next node */
-				node = node->next;
-			} while (node != head);
-		}
-
-		/* Proceed to the next input state */
-		state_iter = state_iter->next;
-	} while (state_iter != input_states);
-
-	/* Calculate move-b for input states */
-	do {
-		state_t *head = transitions[state_iter->id - 1]->b;
-		state_t *node = head;
-
-		if (node->id != -1) {
-			do {
-				if (b_states->id == -1) {
-					b_states->id = node->id;
-				} else {
-					/* Create a new state node to be added to mova-a linked list */
-					state_t *new_state = malloc(sizeof(struct state));
-
-					/* Copy the state id value */
-					new_state->id = node->id;
-
-					/* Add the new state to the linked list */
-					list_add(b_states, new_state);
-				}
-
-				/* Proceed to the next node */
-				node = node->next;
-			} while (node != head);
-		}
-
-		/* Proceed to the next input state */
-		state_iter = state_iter->next;
-	} while (state_iter != input_states);
-#endif
 
 	return;
 }
@@ -224,11 +143,11 @@ void mark(state_t *input_states, struct list_head *transitions, struct list_head
  */
 int state_not_marked(state_t *state, struct list_head *state_list)
 {
-	int result = 1;
-	int id_found = 0;
-	state_t *state_iter = state;
-	state_t *iter_1, *iter_2;
-	state_list_t *list_iter;
+	int 		result = 1;
+	int 		id_found = 0;
+	state_t 	*state_iter = state;
+	state_t 	*iter_1, *iter_2;
+	state_list_t 	*list_iter;
 
 	/* Iterate over linked list of linked lists of states */
 	list_for_each_entry(list_iter, state_list, list) {
