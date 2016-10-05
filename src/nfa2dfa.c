@@ -30,6 +30,9 @@ void e_closure(state_t *input_states, struct list_head *transitions, int empty, 
 			list_init((*output_states));
 
 			(*output_states)->id = input_iter->id;
+
+			/* Reset the empty flag */
+			empty = 0;
 		} else {
 			state_t *temp_state = *output_states;
 			int found = 0;

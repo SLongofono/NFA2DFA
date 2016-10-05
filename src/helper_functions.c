@@ -102,14 +102,32 @@ void print_state(state_t *state)
 	state_t *head = state;
 	state_t *iter = head;
 	int count = 0;
+	int threshold = 0;
+	int print_val;
 
 	do {
-		if (iter->id != -1) {
-			if (count != 0) printf(",");
-			printf("%d", iter->id);
+		state_t *temp_iter = state;
+
+		/* Reset print value */
+		print_val = 1000;
+
+		if (temp_iter->id != -1) {
+			do {
+				if (temp_iter->id > threshold && temp_iter->id < print_val) {
+					print_val = temp_iter->id;
+				}
+				temp_iter = temp_iter->next;
+			} while (temp_iter != head);
 		} else {
 			break;
 		}
+
+		/* Update the threshold value for the next iteration */
+		threshold = print_val;
+
+		/* Print the value obained */
+		if (count != 0) printf(",");
+		printf("%d", threshold);
 
 		/* Proceed to next state in the list */
 		iter = iter->next;
