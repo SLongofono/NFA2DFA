@@ -23,9 +23,26 @@
  */
 int main(void)
 {
-	char	input_buffer[LINE_WIDTH];
-	int	total_states = 0;
-	int	iter = 0;
+	char			input_buffer[LINE_WIDTH];
+	int			total_states = 0;
+	int			iter = 0;
+	state_t 		*in_head;
+	state_t 		*out_head;
+	struct list_head 	*state_transitions;
+
+	/* DFA states iterator */
+	int 			dfa_state = 0;
+	int 			total_dfa_states = 1;
+	int			final_state_marked = 0;
+	state_t 		*dfa_final_states;
+
+	/* Create a linked list of unmarked states */
+	state_t 		*list;
+	state_list_t 		*um_state;
+	LIST_HEAD(unmarked_states);
+
+	/* Track DFA transitions */
+	LIST_HEAD(dfa);
 
 #if (MAIN_DEBUG == 1)
 	/* Declare debug data */
@@ -34,11 +51,9 @@ int main(void)
 #endif
 
 	/* Create head-state for start states */
-	state_t *in_head;
 	in_head = malloc(sizeof(struct state));
 
 	/* Crate head-state for finish states */
-	state_t *out_head;
 	out_head = malloc(sizeof(struct state));
 
 	/* Initialize the head of linked list of start states */
@@ -69,7 +84,7 @@ int main(void)
 	fgets(input_buffer, LINE_WIDTH, stdin);
 
 	/* Create a dynamic array for storing the transitions for all NFA states*/
-	struct list_head *state_transitions = malloc(total_states * sizeof(struct list_head));
+	state_transitions = malloc(total_states * sizeof(struct list_head));
 
 	for (iter = 0; iter < total_states; iter++) {
 		/* Get the first state transition */
@@ -124,15 +139,11 @@ int main(void)
 			printf("********************** DEBUG END **************** \n\n");
 #endif
 
-	/* Create a linked list of unmarked states */
-	LIST_HEAD(unmarked_states);
-
 	/* Create the first node for unmarked states list */
-	state_list_t *um_state = malloc(sizeof(struct state_list));
+	um_state = malloc(sizeof(struct state_list));
 	state_list_init(um_state);
 
 	/* Calculate e-closure of Initial State */
-	state_t *list;
 	e_closure(in_head, state_transitions, 1, &list);
 	printf ("E-closure(I0) = {");
 	print_state(list);
@@ -144,13 +155,7 @@ int main(void)
 	/* Push the obtained linked list to the unmarked states */
 	list_add_tail(&(um_state->list), &(unmarked_states));
 
-	/* DFA states iterator */
-	int dfa_state = 0;
-	int total_dfa_states = 1;
-
 	/* Track the final states of the DFA */
-	state_t *dfa_final_states;
-	int	final_state_marked = 0;
 	dfa_final_states = malloc(sizeof(struct state));
 	list_init(dfa_final_states);
 
@@ -164,13 +169,12 @@ int main(void)
 		} 
 	}
 
-	/* Track DFA transitions */
-	LIST_HEAD(dfa);
-
 	/* Iterate over list of unmarked states */
 	list_for_each_entry(um_state, &unmarked_states, list) {
-		/* Crate a new dfa table node */
-		dfa_entry_t *dfa_node;
+		/* Create a new dfa table node */
+		char 		depth = 'a';
+		dfa_entry_t 	*dfa_node;
+		state_list_t 	*move_list;
 
 		/* Re-initialize the final state marked flag */
 		final_state_marked = 0;
@@ -191,9 +195,6 @@ int main(void)
 		printf("\nMark %d\n", dfa_state+1);
 		mark(um_state->state_ptr, state_transitions, &moves);
 
-		char depth = 'a';
-		state_list_t *move_list;
-	
 		/* Iterate over input symbols and calculate dfa states */
 		list_for_each_entry(move_list, &moves, list) {
 			/* Create a node in the dfa state linked list */
@@ -211,8 +212,6 @@ int main(void)
 
 			/* Make sure that the linked list contain legitimate data */
 			if (move_list->state_ptr->id != -1) {
-
-
 				printf("{");
 				print_state(um_state->state_ptr);
 				printf("} --%c--> {", depth);
