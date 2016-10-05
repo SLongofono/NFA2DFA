@@ -18,7 +18,7 @@
  * e_closure
  * Recursive function to calculate e-closure of a set of input states
  */
-void e_closure(state_t *input_states, transitions_t **transitions, int empty, state_t **output_states)
+void e_closure(state_t *input_states, struct list_head *transitions, int empty, state_t **output_states)
 {
 	state_t	*state_iter = input_states;
 
@@ -42,7 +42,8 @@ void e_closure(state_t *input_states, transitions_t **transitions, int empty, st
 		}
 
 		/* Check the transition table for any E-transitions of the input state */
-		state_t *head = transitions[state_iter->id - 1]->E;
+		state_list_t *node = list_entry((transitions[state_iter->id - 1]).prev, state_list_t, list);
+		state_t *head = node->state_ptr;
 
 		if (head->id != -1) {
 			/* Calculate the e-closure of the E-transition linked list */
@@ -61,8 +62,88 @@ void e_closure(state_t *input_states, transitions_t **transitions, int empty, st
  * Mark
  * Function to mark the input states
  */
-void mark(state_t *input_states, transitions_t **transitions, state_t **a_move, state_t **b_move)
+void mark(state_t *input_states, struct list_head *transitions, struct list_head *moves_list)
 {
+	state_list_t	*transition;
+	state_t		*state_iter = input_states;
+	char		id = 'a';
+
+	/* Iterate over the list of transitions */
+	list_for_each_entry(transition, &transitions[1], list) {
+		if (&(transition->list) == (&(transitions[1]))->prev) break;
+
+		/* Create a state-list to be returned */
+		state_list_t *moves = malloc(sizeof(struct state_list));
+		state_list_init(moves);
+
+		/* Add the list node to moves list */
+		list_add_tail(&(moves->list), moves_list);
+
+		/* Create a new state list */
+		moves->state_ptr = malloc(sizeof(struct state));
+
+		/* Initialize the empty state */
+		list_init(moves->state_ptr);
+
+
+		do {
+			state_list_t	*node;
+			char		depth = 'a';
+			list_for_each_entry(node, &transitions[state_iter->id -1], list) {
+
+				if (depth == id) {
+					/* Copy the move value to state list */
+					state_t	*new_state;
+					state_t *state_iter = node->state_ptr;
+
+					do {
+						if (state_iter->id != -1) {
+							if (moves->state_ptr->id == -1) {
+								/* Populate the head state */
+								moves->state_ptr->id = state_iter->id;
+							} else {
+								/* Create a new state */
+								new_state = malloc(sizeof(struct state));
+								list_init(new_state);
+
+								/* Populate the state id */
+								new_state->id = state_iter->id;
+
+								/* Add the new state to linked list */
+								list_add(moves->state_ptr, new_state);
+							}
+
+						} else {
+							break;
+						}
+
+						/* Proceed to next state */
+						state_iter = state_iter->next;
+					} while (state_iter != node->state_ptr);
+
+					break;
+				}
+
+				depth++;
+			}
+
+			/* Proceed to next state */
+			state_iter = state_iter->next;
+		} while (state_iter != input_states);
+
+#if 0
+		printf("{");
+		print_state(input_states);
+		printf("} --%c--> {", id);
+		print_state(moves->state_ptr);
+		printf("}\n");
+#endif
+
+		/* Increment the id */
+		id++;
+	}
+
+#if 0
 	state_t	*state_iter = input_states;
 	state_t *a_states, *b_states;
 
@@ -133,6 +214,7 @@ void mark(state_t *input_states, transitions_t **transitions, state_t **a_move, 
 		/* Proceed to the next input state */
 		state_iter = state_iter->next;
 	} while (state_iter != input_states);
+#endif
 
 	return;
 }

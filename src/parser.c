@@ -18,57 +18,73 @@
  * get_transitions
  * Helper function for parsing the transition table
  */
-void get_transitions(char *input_buffer, transitions_t *transitions)
+void get_transitions(char *input_buffer, struct list_head *states)
 {
-	int iter = 0;
-	int flag = 1;
-	int id_flag = 0;
-	int a_flag = 0;
-	int b_flag = 0;
-	int E_flag = 0;
-	int id = 0;
-	int state_iter = 0;
+	int 		iter = 0;
+	int 		flag = 1;
+	int 		id = 0;
+	int 		state_iter = 0;
+	state_list_t 	*list_iter;
+	state_t		*new_state;
 
 	/* Extract the transition values from the input string */
-	for (iter = 0; iter < 256 && input_buffer[iter] != '\n'; iter++) {
+	for (; iter < 256 && input_buffer[iter] != '\n'; iter++) {
 		/* Find out if the state machine is in an accepting state */
-		if (id_flag == 0) {
-			/* Extract the number from the current input string */
-			if (input_buffer[iter] < '0' || input_buffer[iter] > '9') {
-					/* No longer in the accepting state */
-					id_flag = 1;
+		if (input_buffer[iter] == '{') {
+			flag = 1;
+			id = 0;
+			state_iter = 0;
 
-					/* Make sure that we have a legal value of id */
-					if (id == 0) {
-						/* id is invalid. Halt the program */
-						fprintf(stderr, "ID could not be extracted from the transition table!\n");
-						while(1);
-					} else {
-						/* Set the id for this transition */
-						transitions->id = id;
-					}
+			/* Create a list node in linked list of states */
+			list_iter = malloc(sizeof(struct state_list));
+			state_list_init(list_iter);
+
+			/* Create a new state node */
+			new_state = malloc(sizeof(struct state));
+			list_init(new_state);
+
+			/* Track the state in the linked list of states */
+			list_iter->state_ptr = new_state;
+
+			/* Add the node of linked list of states to the output list */
+			list_add_tail(&(list_iter->list), states);
+		} else if (input_buffer[iter] == '}') {
+			/* Store the last state */
+			if (state_iter == 0) {
+				continue;
 			} else {
-				id = (input_buffer[iter] - '0') + state_iter * 10 * (id);
-				state_iter++;
-			}
-		} else if (id_flag == 1 && a_flag == 0) {
-			/* Id has been acquired. Get the a-transitions */
-			if (input_buffer[iter] == '{') {
-				flag = 1;
-				id = 0;
-				state_iter = 0;
-			} else if (input_buffer[iter] == '}') {
-				/* Mark the acquisition of a-transitions as complete */
-				a_flag = 1;
+				/* Update the linked list */
+				if (new_state->id == -1) {
+					/* Populate the head node */
+					new_state->id = id;
+				} else {
+					/* Create a new state */
+					state_t *next_state = malloc(sizeof(struct state));
 
-				/* Store the last state */
-				if (state_iter == 0) {
-					continue;
+					/* Populate the id for this state */
+					next_state->id = id;
+
+					/* Place the state in the a-linked list */
+					list_add(new_state, next_state);
+				}
+			}
+
+			/* Set the flag to zero to stop looking for input states */
+			flag = 0;
+		}
+
+		/* Proceed if we are in an accepting state */
+		if (flag == 1) {
+			/* Discard the brace character */
+			if (input_buffer[iter] != '{') {
+				if (input_buffer[iter] != ',') {
+					/* Accumulate the string containing the string literals */
+					id = (input_buffer[iter] - '0') + state_iter * 10 * id;
+					state_iter++;
 				} else {
 					/* Update the linked list */
-					if (transitions->a->id == -1) {
-						/* Populate the head node */
-						transitions->a->id = id;
+					if (new_state->id == -1) {
+						new_state->id = id;
 					} else {
 						/* Create a new state */
 						state_t *next_state = malloc(sizeof(struct state));
@@ -76,171 +92,15 @@ void get_transitions(char *input_buffer, transitions_t *transitions)
 						/* Populate the id for this state */
 						next_state->id = id;
 
-						/* Place the state in the a-linked list */
-						list_add(transitions->a, next_state);
+						/* Place the new state in the linked list */
+						list_add(new_state, next_state);
 					}
-				}
 
-				/* Set the flag to zero to stop looking for input states */
-				flag = 0;
-			}
+					/* Reset the state iter */
+					state_iter = 0;
 
-			if (flag == 1) {
-				/* Discard the brace character */
-				if (input_buffer[iter] != '{') {
-					if (input_buffer[iter] != ',') {
-						/* Accumulate the string containing the string literals */
-						id = (input_buffer[iter] - '0') + state_iter * 10 * id;
-						state_iter++;
-					} else {
-						/* Update the linked list */
-						if (transitions->a->id == -1) {
-							transitions->a->id = id;
-						} else {
-							/* Create a new state */
-							state_t *next_state = malloc(sizeof(struct state));
-
-							/* Populate the id for this state */
-							next_state->id = id;
-
-							/* Place the new state in the linked list */
-							list_add(transitions->a, next_state);
-						}
-
-						/* Reset the state iter */
-						state_iter = 0;
-
-						/* Reset the id value */
-						id = 0;
-					}
-				}
-			}
-		} else if (id_flag == 1 && a_flag == 1 && b_flag == 0) {
-			/* Id has been acquired. Get the a-transitions */
-			if (input_buffer[iter] == '{') {
-				flag = 1;
-				id = 0;
-				state_iter = 0;
-			} else if (input_buffer[iter] == '}') {
-				/* Mark the acquisition of a-transitions as complete */
-				b_flag = 1;
-
-				/* Store the last state */
-				if (state_iter == 0) {
-					continue;
-				} else {
-					/* Update the linked list */
-					if (transitions->b->id == -1) {
-						/* Populate the head node */
-						transitions->b->id = id;
-					} else {
-						/* Create a new state */
-						state_t *next_state = malloc(sizeof(struct state));
-
-						/* Populate the id for this state */
-						next_state->id = id;
-
-						/* Place the state in the a-linked list */
-						list_add(transitions->b, next_state);
-					}
-				}
-
-				/* Set the flag to zero to stop looking for input states */
-				flag = 0;
-			}
-
-			if (flag == 1) {
-				/* Discard the brace character */
-				if (input_buffer[iter] != '{') {
-					if (input_buffer[iter] != ',') {
-						/* Accumulate the string containing the string literals */
-						id = (input_buffer[iter] - '0') + state_iter * 10 * id;
-						state_iter++;
-					} else {
-						/* Update the linked list */
-						if (transitions->b->id == -1) {
-							transitions->b->id = id;
-						} else {
-							/* Create a new state */
-							state_t *next_state = malloc(sizeof(struct state));
-
-							/* Populate the id for this state */
-							next_state->id = id;
-
-							/* Place the new state in the linked list */
-							list_add(transitions->b, next_state);
-						}
-
-						/* Reset the state iter */
-						state_iter = 0;
-
-						/* Reset the id value */
-						id = 0;
-					}
-				}
-			}
-		} else if (id_flag == 1 && a_flag == 1 && b_flag == 1 && E_flag == 0) {
-			/* Id has been acquired. Get the a-transitions */
-			if (input_buffer[iter] == '{') {
-				flag = 1;
-				id = 0;
-				state_iter = 0;
-			} else if (input_buffer[iter] == '}') {
-				/* Mark the acquisition of a-transitions as complete */
-				E_flag = 1;
-
-				/* Store the last state */
-				if (state_iter == 0) {
-					continue;
-				} else {
-					/* Update the linked list */
-					if (transitions->E->id == -1) {
-						/* Populate the head node */
-						transitions->E->id = id;
-					} else {
-						/* Create a new state */
-						state_t *next_state = malloc(sizeof(struct state));
-
-						/* Populate the id for this state */
-						next_state->id = id;
-
-						/* Place the state in the E-linked list */
-						list_add(transitions->E, next_state);
-					}
-				}
-
-				/* Set the flag to zero to stop looking for input states */
-				flag = 0;
-			}
-
-			if (flag == 1) {
-				/* Discard the brace character */
-				if (input_buffer[iter] != '{') {
-					if (input_buffer[iter] != ',') {
-						/* Accumulate the string containing the string literals */
-						id = (input_buffer[iter] - '0') + state_iter * 10 * id;
-						state_iter++;
-					} else {
-						/* Update the linked list */
-						if (transitions->E->id == -1) {
-							transitions->E->id = id;
-						} else {
-							/* Create a new state */
-							state_t *next_state = malloc(sizeof(struct state));
-
-							/* Populate the id for this state */
-							next_state->id = id;
-
-							/* Place the new state in the linked list */
-							list_add(transitions->E, next_state);
-						}
-
-						/* Reset the state iter */
-						state_iter = 0;
-
-						/* Reset the id value */
-						id = 0;
-					}
+					/* Reset the id value */
+					id = 0;
 				}
 			}
 		}

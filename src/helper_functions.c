@@ -21,9 +21,9 @@
  */
 void print_dfa_table(struct list_head *head)
 {
-	dfa_entry_t *entry = list_entry(head->next, dfa_entry_t, list);
-	char buf_a[32];
-	char buf_b[32];
+	dfa_entry_t 	*entry = list_entry(head->next, dfa_entry_t, list);
+	dfa_move_t	*tmp;
+	char 		depth = 'a';
 
 	/* Print table header */
 	printf("Initial State: {%d}\n", entry->id);
@@ -32,23 +32,33 @@ void print_dfa_table(struct list_head *head)
 	print_final_states(head);
 	printf("}\n");
 
-	printf("State	a	b\n");
+	/* Print table symbols */
+	printf("State	");
+	list_for_each_entry(tmp, &(entry->dfa_transitions), list) {
+		printf("%c	", depth);
+		depth++;
+	}
 
-	/* Iterate through dfa transitions and print them */
+	/* Print a new line */
+	printf("\n");
+
+	/* Iterate over dfa states */
 	list_for_each_entry(entry, head, list) {
-		if (entry->trans_a == 0) {
-			sprintf(buf_a, "");
-		} else {
-			sprintf(buf_a, "%d", entry->trans_a);
+		printf("%d	", entry->id);
+
+		/* Iterate over dfa moves */
+		dfa_move_t *move;
+
+		list_for_each_entry(move, &(entry->dfa_transitions), list) {
+			if (move->id != 0) {
+				printf("{%d}	", move->id);
+			} else {
+				printf("{}	");
+			}
 		}
 
-		if (entry->trans_b == 0) {
-			sprintf(buf_b, "");
-		} else {
-			sprintf(buf_b, "%d", entry->trans_b);
-		}
-
-		printf("%d	{%s}	{%s}\n", entry->id, buf_a, buf_b);
+		/* Output a new line */
+		printf("\n");
 	}
 
 	/* All done here */
@@ -66,10 +76,16 @@ void print_final_states(struct list_head *dfa)
 	int count = 0;
 
 	list_for_each_entry(node, dfa, list) {
-		if (node->trans_a == final_state_id || node->trans_b == final_state_id) {
-			if (count != 0) printf (",");
-			printf ("%d", node->id);
-			count++;
+		/* Iterate over the list of moves */
+		dfa_move_t *move;
+
+		list_for_each_entry(move, &(node->dfa_transitions), list) {
+			if (move->id == final_state_id) {
+				if (count != 0) printf (",");
+				printf ("%d", node->id);
+				count++;
+				break;
+			}
 		}
 	}
 

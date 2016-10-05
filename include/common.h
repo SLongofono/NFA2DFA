@@ -15,22 +15,26 @@ typedef struct state {
 	struct state 		*prev;
 } state_t;
 
-typedef struct transitions {
-	int			id;
-	struct state 		*a;
-	struct state 		*b;
-	struct state 		*E;
-} transitions_t;
-
 typedef struct state_list {
 	struct state 		*state_ptr;
 	struct list_head	list;
 } state_list_t;
 
+typedef struct transitions {
+	int		id;
+	struct state	*a;
+	struct state	*b;
+	struct state	*E;
+} transitions_t;
+
+typedef struct dfa_move_list {
+	int			id;
+	struct list_head	list;
+} dfa_move_t;
+
 typedef struct dfa_table_entry {
 	int			id;
-	int			trans_a;
-	int			trans_b;
+	struct list_head	dfa_transitions;
 	struct list_head	list;
 } dfa_entry_t;
 
@@ -75,12 +79,20 @@ do {								\
  * Convenience macro for initializing a dfa table entry for a
  * given state
  */
-#define dfa_entry_init(dfa_transition, trans_id)		\
+#define dfa_entry_init(dfa_entry, trans_id)			\
 do {								\
-	(dfa_transition)->id = trans_id;			\
-	(dfa_transition)->trans_a = 0;				\
-	(dfa_transition)->trans_b = 0;				\
-	INIT_LIST_HEAD(&((dfa_transition)->list));		\
+	(dfa_entry)->id = trans_id;				\
+	INIT_LIST_HEAD(&((dfa_entry)->dfa_transitions));	\
+	INIT_LIST_HEAD(&((dfa_entry)->list));			\
+} while (0);
+
+/*
+ * Convenience macro for initializing a dfa move
+ */
+#define dfa_move_init(dfa_move)					\
+do {								\
+	(dfa_move)->id = 0;					\
+	INIT_LIST_HEAD(&((dfa_move)->list));			\
 } while (0);
 
 /*
