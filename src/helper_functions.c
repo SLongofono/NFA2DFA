@@ -19,7 +19,7 @@
  * print_dfa_table
  * Convenience function for printing the DFA transition table
  */
-void print_dfa_table(struct list_head *head)
+void print_dfa_table(struct list_head *head, state_t *final_states)
 {
 	dfa_entry_t 	*entry = list_entry(head->next, dfa_entry_t, list);
 	dfa_move_t	*tmp;
@@ -29,7 +29,7 @@ void print_dfa_table(struct list_head *head)
 	printf("Initial State: {%d}\n", entry->id);
 
 	printf("Final States: {");
-	print_final_states(head);
+	print_state(final_states);
 	printf("}\n");
 
 	/* Print table symbols */
@@ -65,7 +65,7 @@ void print_dfa_table(struct list_head *head)
 	return;
 }
 
- /*
+/*
  * print_final_states
  * Convenience function for finding and printing final states of a dfa
  */
@@ -91,6 +91,42 @@ void print_final_states(struct list_head *dfa)
 
 	/* Task Complete */
 	return;
+}
+
+/*
+ * check_move_final_state
+ * Convenience function for checking if a move of DFA state contains
+ * one of the NFA's final states. Returns boolean
+ */
+int check_move_final_state(state_t *in_states, state_t *nfa_final_states)
+{
+	int 		result = 0;
+	state_t		*nfa_iter = nfa_final_states;
+	state_t		*in_iter = in_states;
+
+	/* Iterate over list of input states */
+	do {
+		/* Break the loop if input state list is empty */
+		if (in_iter->id == -1) break;
+
+		/* Iterate over list of final NFA states */
+		do {
+			if (in_iter->id == nfa_iter->id) {
+				/* NFA final state found in the move list of dfa */
+				return 1;
+			}
+
+			/* Proceed to the next NFA state */
+			nfa_iter = nfa_iter->next;
+		} while (nfa_iter != nfa_final_states);
+
+		/* Proceed to the next input state */
+		in_iter = in_iter->next;
+	} while (in_iter != in_states);
+
+
+	/* Return the result to caller */
+	return result;
 }
 
 /*

@@ -134,7 +134,7 @@ int main(void)
 	/* Calculate e-closure of Initial State */
 	state_t *list;
 	e_closure(in_head, state_transitions, 1, &list);
-	printf ("E-Closure(I0) = {");
+	printf ("E-closure(I0) = {");
 	print_state(list);
 	printf ("} = %d\n", 1);
 
@@ -148,6 +148,22 @@ int main(void)
 	int dfa_state = 0;
 	int total_dfa_states = 1;
 
+	/* Track the final states of the DFA */
+	state_t *dfa_final_states;
+	int	final_state_marked = 0;
+	dfa_final_states = malloc(sizeof(struct state));
+	list_init(dfa_final_states);
+
+	/* First of all, find out if this dfa state qualifies as a final state */
+	final_state_marked = check_move_final_state(list, out_head);
+
+	if (final_state_marked == 1) {
+		/* This is a final state */
+		if (dfa_final_states->id == -1) {
+			dfa_final_states->id = dfa_state + 1;
+		} 
+	}
+
 	/* Track DFA transitions */
 	LIST_HEAD(dfa);
 
@@ -155,6 +171,9 @@ int main(void)
 	list_for_each_entry(um_state, &unmarked_states, list) {
 		/* Crate a new dfa table node */
 		dfa_entry_t *dfa_node;
+
+		/* Re-initialize the final state marked flag */
+		final_state_marked = 0;
 
 		/* Allocate memory for dfa node */
 		dfa_node = malloc(sizeof(struct dfa_table_entry));
@@ -169,7 +188,7 @@ int main(void)
 		LIST_HEAD(moves);
 
 		/* Mark the current state */
-		printf("\nMark-%d\n", dfa_state+1);
+		printf("\nMark %d\n", dfa_state+1);
 		mark(um_state->state_ptr, state_transitions, &moves);
 
 		char depth = 'a';
@@ -192,6 +211,8 @@ int main(void)
 
 			/* Make sure that the linked list contain legitimate data */
 			if (move_list->state_ptr->id != -1) {
+
+
 				printf("{");
 				print_state(um_state->state_ptr);
 				printf("} --%c--> {", depth);
@@ -209,6 +230,29 @@ int main(void)
 
 				/* Find out if the new state is already present in the state-list */
 				if (state_not_marked(list, &unmarked_states, &dfa_state_id)) {
+					/* First of all, find out if this dfa state qualifies as a final state */
+					final_state_marked = check_move_final_state(list, out_head);
+
+					if (final_state_marked == 1) {
+						/* This is a final state */
+						if (dfa_final_states->id == -1) {
+							dfa_final_states->id = dfa_state_id;
+						} else {
+							/* Create a new node in the final states list */
+							state_t	*state_node;
+							state_node = malloc(sizeof(struct state));
+
+							/* Initialize the new node */
+							list_init(state_node);
+
+							/* Populate the new node */
+							state_node->id = dfa_state_id;
+
+							/* Add the node to the final states linked list */
+							list_add(dfa_final_states, state_node);
+						}
+					}
+
 					/* Keep track of total dfa-states */
 					total_dfa_states++;
 
@@ -240,7 +284,7 @@ int main(void)
 	printf("\n");
 
 	/* Now print out the DFA Transition Table */
-	print_dfa_table(&dfa);
+	print_dfa_table(&dfa, dfa_final_states);
 
 	/* All done here */
 	return 0;
